@@ -1,5 +1,9 @@
 {
     "files": [
-        "main.py"
+        "src/controllers/mainWindowController.py",
+        "main.py",
+        "src/uiLoader.py",
+        "ui/mainwindow.ui",
+        "src/graph/plotWidget.py"
     ]
 }
