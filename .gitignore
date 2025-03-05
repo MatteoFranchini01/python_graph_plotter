@@ -172,3 +172,5 @@ cython_debug/
 
 # Project dir
 python_graph_plotter/
+eval "$(ssh-agent -s)".pub
+eval "$(ssh-agent -s)"

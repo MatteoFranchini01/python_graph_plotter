@@ -1,40 +1,72 @@
 import random
+import sys
+import threading
+import socket
 
 from PySide6.QtCore import QTimer
-# from PySide6.QtWigets import QGraphicsView
 
-import PySide6.QtWidgets
+from PySide6.QtWidgets import QGraphicsView
+from PySide6.QtCore import Signal, QObject
 
 from src.uiLoader import UiLoader
 from src.graph.plotWidget import LivePlotWidget
-
 from src.uiLoader import UiLoader
+from src.model.ModelData import ModelData
 
+class DataReceiver(QObject):
+    """
+    Segnale per aggiornare il grafico nel thread principale
+    """
+    data_received = Signal(float)
 
 class MainController:
 
     def __init__(self):
         self.ui = UiLoader.load_ui("ui/mainwindow.ui")
 
-        self.graphics_view = self.ui.findChild(PySide6.QtWidgets.QGraphicsView, "graphicsView")
+        self.graphics_view = self.ui.findChild(QGraphicsView, "graphicsView")
+        self.model = ModelData()
+        self.plot = LivePlotWidget(self.graphics_view, self.model)
 
-        self.plot = LivePlotWidget(self.graphics_view)
+        self.host = "127.0.0.1"
+        self.port = 5005
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind((self.host, self.port))
 
-        self.current_value = 0
+        self.receiver = DataReceiver()
+        self.receiver.data_received.connect(self.on_data_received)
 
-        self.timer = QTimer()
+        self.thread = threading.Thread(target=self.listen_udp, daemon=True)
+        self.thread.start()
 
-        self.timer.timeout.connect(self.update_data)
+        self.x_counter = 0
+        self.update_counter = 0
 
-        self.timer.start(100)
+    def listen_udp(self):
+        while True:
+            data, _ = self.sock.recvfrom(1024)
 
-    def update_data(self):
+            try:
+                value = float(data.decode().strip())
+
+                self.receiver.data_received.emit(value)
+
+                self.x_counter += 1
+
+            except ValueError:
+                print(f"Errore nella conversione del valore: {data}")
+
+    def on_data_received(self, value):
         """
-        Simula un aggiornamento della variabile e aggiorna il grafico
+        Gestisce il dato ricevuto e aggiorna il grafico
         """
-        self.current_value += random.uniform(-1, 1)
+        self.model.add_data(self.x_counter, value)
+        self.x_counter += 1
 
-        self.plot.update_plot(self.current_value)
+        self.update_counter += 1
+
+        if self.update_counter % 2 == 0:
+            self.plot.update_plot()
 
     def show(self):
         """

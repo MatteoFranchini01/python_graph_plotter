@@ -4,6 +4,9 @@
         "main.py",
         "src/uiLoader.py",
         "ui/mainwindow.ui",
-        "src/graph/plotWidget.py"
+        "src/graph/plotWidget.py",
+        "server/serverUdp.py",
+        ".gitignore",
+        "src/model/ModelData.py"
     ]
 }
