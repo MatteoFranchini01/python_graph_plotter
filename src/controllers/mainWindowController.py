@@ -5,7 +5,7 @@ import socket
 
 from PySide6.QtCore import QTimer
 
-from PySide6.QtWidgets import QGraphicsView
+from PySide6.QtWidgets import QGraphicsView, QCheckBox, QDoubleSpinBox
 from PySide6.QtCore import Signal, QObject
 
 from src.uiLoader import UiLoader
@@ -25,8 +25,29 @@ class MainController:
         self.ui = UiLoader.load_ui("ui/mainwindow.ui")
 
         self.graphics_view = self.ui.findChild(QGraphicsView, "graphicsView")
+        self.checkMax = self.ui.findChild(QCheckBox, "maxLineCheckBox")
+        self.checkMin = self.ui.findChild(QCheckBox, "minLineCheckBox")
+        self.spinMax = self.ui.findChild(QDoubleSpinBox, "maxSpinBox")
+        self.spinMin = self.ui.findChild(QDoubleSpinBox, "minSpinBox")
+
+        # Configurazione delle double spin box
+        self.spinMax.setMinimum(-1000.0)
+        self.spinMax.setMaximum(1000.0)
+        self.spinMin.setMinimum(-1000.0)
+        self.spinMax.setMaximum(1000.0)
+
         self.model = ModelData()
         self.plot = LivePlotWidget(self.graphics_view, self.model)
+
+        # Collego i segnali della UI ai metodi del grafico
+        self.checkMin.toggled.connect(self.plot.toggle_min_visibility)
+        self.checkMax.toggled.connect(self.plot.toggle_max_visibility)
+        self.spinMin.valueChanged.connect(self.plot.set_min_value)
+        self.spinMax.valueChanged.connect(self.plot.set_max_value)
+
+        # Collego i segnali del grafico alla UI
+        self.plot.update_min_value.connect(self.spinMin.setValue)
+        self.plot.update_max_value.connect(self.spinMax.setValue)
 
         self.host = "127.0.0.1"
         self.port = 5005

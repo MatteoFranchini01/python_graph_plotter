@@ -35,7 +35,54 @@
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QWidget" name="widget" native="true"/>
+      <widget class="QWidget" name="widget" native="true">
+       <widget class="QCheckBox" name="maxLineCheckBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>85</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Max line</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="minLineCheckBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>40</y>
+          <width>85</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Min line</string>
+        </property>
+       </widget>
+       <widget class="QDoubleSpinBox" name="maxSpinBox">
+        <property name="geometry">
+         <rect>
+          <x>110</x>
+          <y>10</y>
+          <width>62</width>
+          <height>22</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QDoubleSpinBox" name="minSpinBox">
+        <property name="geometry">
+         <rect>
+          <x>110</x>
+          <y>40</y>
+          <width>62</width>
+          <height>22</height>
+         </rect>
+        </property>
+       </widget>
+      </widget>
      </item>
     </layout>
    </widget>

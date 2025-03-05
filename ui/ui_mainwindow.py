@@ -15,8 +15,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QGraphicsView, QHBoxLayout, QMainWindow,
-    QMenuBar, QSizePolicy, QStatusBar, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QGraphicsView,
+    QHBoxLayout, QMainWindow, QMenuBar, QSizePolicy,
+    QStatusBar, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -36,6 +37,18 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.widget = QWidget(self.horizontalLayoutWidget)
         self.widget.setObjectName(u"widget")
+        self.maxLineCheckBox = QCheckBox(self.widget)
+        self.maxLineCheckBox.setObjectName(u"maxLineCheckBox")
+        self.maxLineCheckBox.setGeometry(QRect(10, 10, 85, 20))
+        self.minLineCheckBox = QCheckBox(self.widget)
+        self.minLineCheckBox.setObjectName(u"minLineCheckBox")
+        self.minLineCheckBox.setGeometry(QRect(10, 40, 85, 20))
+        self.maxSpinBox = QDoubleSpinBox(self.widget)
+        self.maxSpinBox.setObjectName(u"maxSpinBox")
+        self.maxSpinBox.setGeometry(QRect(110, 10, 62, 22))
+        self.minSpinBox = QDoubleSpinBox(self.widget)
+        self.minSpinBox.setObjectName(u"minSpinBox")
+        self.minSpinBox.setGeometry(QRect(110, 40, 62, 22))
 
         self.horizontalLayout.addWidget(self.widget)
 
@@ -55,5 +68,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        self.maxLineCheckBox.setText(QCoreApplication.translate("MainWindow", u"Max line", None))
+        self.minLineCheckBox.setText(QCoreApplication.translate("MainWindow", u"Min line", None))
     # retranslateUi
 
