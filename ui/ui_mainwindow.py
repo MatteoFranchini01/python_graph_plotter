@@ -16,8 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QGraphicsView,
-    QHBoxLayout, QMainWindow, QMenuBar, QSizePolicy,
-    QStatusBar, QWidget)
+    QHBoxLayout, QListView, QMainWindow, QMenuBar,
+    QSizePolicy, QStatusBar, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -49,6 +49,9 @@ class Ui_MainWindow(object):
         self.minSpinBox = QDoubleSpinBox(self.widget)
         self.minSpinBox.setObjectName(u"minSpinBox")
         self.minSpinBox.setGeometry(QRect(110, 40, 62, 22))
+        self.listView = QListView(self.widget)
+        self.listView.setObjectName(u"listView")
+        self.listView.setGeometry(QRect(0, 170, 201, 381))
 
         self.horizontalLayout.addWidget(self.widget)
 

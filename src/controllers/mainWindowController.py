@@ -1,16 +1,12 @@
-import random
-import sys
 import threading
 import socket
 
-from PySide6.QtCore import QTimer
-
-from PySide6.QtWidgets import QGraphicsView, QCheckBox, QDoubleSpinBox
-from PySide6.QtCore import Signal, QObject
+from PySide6.QtWidgets import QGraphicsView, QCheckBox, QDoubleSpinBox, QListView, QAbstractItemView
+from PySide6.QtCore import Signal, QObject, Qt
+from PySide6.QtGui import QStandardItem, QStandardItemModel
 
 from src.uiLoader import UiLoader
 from src.graph.plotWidget import LivePlotWidget
-from src.uiLoader import UiLoader
 from src.model.ModelData import ModelData
 
 class DataReceiver(QObject):
@@ -29,6 +25,7 @@ class MainController:
         self.checkMin = self.ui.findChild(QCheckBox, "minLineCheckBox")
         self.spinMax = self.ui.findChild(QDoubleSpinBox, "maxSpinBox")
         self.spinMin = self.ui.findChild(QDoubleSpinBox, "minSpinBox")
+        self.listView = self.ui.findChild(QListView, "listView")
 
         # Configurazione delle double spin box
         self.spinMax.setMinimum(-1000.0)
@@ -49,30 +46,119 @@ class MainController:
         self.plot.update_min_value.connect(self.spinMin.setValue)
         self.plot.update_max_value.connect(self.spinMax.setValue)
 
+        # Connessione con il server
         self.host = "127.0.0.1"
-        self.port = 5005
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind((self.host, self.port))
+        self.udp_port = 5005
+        self.tcp_port = 6000
+        self.selected_variable = None
 
-        self.receiver = DataReceiver()
-        self.receiver.data_received.connect(self.on_data_received)
+        # Comunicazione TCP per ottenere la lista di variabili
+        self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_sock.connect((self.host, self.tcp_port))
 
+        # Ricezione della lista di variabili
+        self.receive_variable_list()
+
+        # Configurazione della QListView come una lista con checkbox
+        self.listView.setSelectionMode(QAbstractItemView.NoSelection)
+        self.listView.clicked.connect(self.on_variable_selected)
+
+        # Avvio del thread per ricevere dati UDP
         self.thread = threading.Thread(target=self.listen_udp, daemon=True)
         self.thread.start()
 
         self.x_counter = 0
         self.update_counter = 0
 
+    def receive_variable_list(self):
+        """
+        Riceve la lista delle variabili dal server e la popola nella QListView
+        """
+        data = self.tcp_sock.recv(1024).decode().strip()
+
+        variable_list = data.split(",")
+
+        self.variable_model = QStandardItemModel()
+
+        for var in variable_list:
+            item = QStandardItem(var)
+            item.setCheckable(True)
+            item.setEditable(False)
+            self.variable_model.appendRow(item)
+
+        self.listView.setModel(self.variable_model)
+
+    def on_variable_selected(self, index):
+        """
+        Quando l'utente seleziona una variabile, invia il nome al server via TCP
+        """
+        item = self.variable_model.itemFromIndex(index)
+
+        if item.isCheckable():
+            checked = item.checkState() == Qt.Checked
+            selected_variable = item.text()
+
+            if checked:
+                if selected_variable != self.selected_variable:
+                    self.selected_variable = selected_variable
+
+                    self.model.clear_data()
+
+                    self.plot.clear_plot()
+                    self.plot.update_plot()
+
+                    self.tcp_sock.sendall(selected_variable.encode())
+
+            else:
+                if selected_variable == self.selected_variable:
+                    self.selected_variable = None
+
+                    self.model.clear_data()
+
+                    self.plot.clear_plot()
+
+                    self.tcp_sock.sendall(b"STOP")
+
+        # selected_variable = self.variable_model.data(index)
+
+        # if selected_variable != self.selected_variable:
+        #     self.selected_variable = selected_variable
+
+        #     self.model.clear_data() # resetta il grafico
+
+        #     self.plot.update_plot()
+
+        #     # Invia la variabile selezionata via TCP
+        #     self.tcp_sock.sendall(selected_variable.encode())
+
     def listen_udp(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind((self.host, self.udp_port))
+
+        self.receiver = DataReceiver()
+        self.receiver.data_received.connect(self.on_data_received)
+
         while True:
+            if not self.selected_variable:
+                continue
+
             data, _ = self.sock.recvfrom(1024)
 
             try:
-                value = float(data.decode().strip())
+                message = data.decode().strip()
 
-                self.receiver.data_received.emit(value)
+                parts = message.split(":")
 
-                self.x_counter += 1
+                if len(parts) == 2:
+                    var_name, value_str = parts
+                    value = float(value_str)
+
+                    self.receiver.data_received.emit(value)
+
+                    self.x_counter += 1
+
+                else:
+                    raise ValueError("Formato messaggio non valido")
 
             except ValueError:
                 print(f"Errore nella conversione del valore: {data}")

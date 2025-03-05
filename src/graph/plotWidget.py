@@ -68,6 +68,12 @@ class LivePlotWidget(QObject):
         if len(x_data) > 100:
             self.plot_widget.setXRange(x_data[-100], x_data[-1], padding=0)
 
+    def clear_plot(self):
+        """
+        Cancella il grafico rimuovendo tutti i dati
+        """
+        self.curve.setData([], [])
+
     def min_line_moved(self):
         """
         Quando la linea del minimo viene trascinata, aggiorna la UI

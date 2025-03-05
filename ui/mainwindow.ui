@@ -82,6 +82,16 @@
          </rect>
         </property>
        </widget>
+       <widget class="QListView" name="listView">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>170</y>
+          <width>201</width>
+          <height>381</height>
+         </rect>
+        </property>
+       </widget>
       </widget>
      </item>
     </layout>

@@ -11,3 +11,7 @@ class ModelData:
 
     def get_data(self):
         return self.full_data_x, self.full_data_y
+
+    def clear_data(self):
+        self.full_data_x = []
+        self.full_data_y = []
