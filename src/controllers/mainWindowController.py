@@ -95,13 +95,13 @@ class MainController(QObject):
         """
         Attiva o disattiva gli alert per il superamento del massimo
         """
-        self.alertMaxActive = state = 2     # 2 significa spuntato
+        self.alertMaxActive = (state == 2)
 
     def toggle_alert_min(self, state):
         """
         Attiva o disattiva gli alert per il superamento del minimo
         """
-        self.alertMinActive = state = 2
+        self.alertMinActive = (state == 2)
 
     def receive_variable_list(self):
         """
@@ -220,7 +220,22 @@ class MainController(QObject):
             self.alert_box.setIcon(QMessageBox.Warning)
             self.alert_box.setWindowTitle("Alert valore fuori soglia")
             self.alert_box.setText(message)
-            self.alert_box.show()
+
+            self.alert_box.setWindowModality(Qt.NonModal)  # Permette interazione con la UI sottostante
+            self.alert_box.setAttribute(Qt.WA_DeleteOnClose)  # Chiude e libera la memoria quando
+
+            # Connetto il segnale di chiusura alla funzione che resetta self.alert_box
+            self.alert_box.finished.connect(self.reset_alert_box)
+
+            self.alert_box.show()  # Usa show() per NON bloccare la UI
+            self.alert_box.raise_()  # Porta la finestra in primo piano
+            self.alert_box.activateWindow()  # Assicura che riceva il
+
+    def reset_alert_box(self):
+        """
+        Resetta la variabile self.alert_box quando l'alert viene chiuso
+        """
+        self.alert_box = None
 
     def show(self):
         """
