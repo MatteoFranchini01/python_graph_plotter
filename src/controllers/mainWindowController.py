@@ -1,7 +1,7 @@
 import threading
 import socket
 
-from PySide6.QtWidgets import QGraphicsView, QCheckBox, QDoubleSpinBox, QListView, QAbstractItemView, QPushButton
+from PySide6.QtWidgets import QGraphicsView, QCheckBox, QDoubleSpinBox, QListView, QAbstractItemView, QPushButton, QMessageBox
 from PySide6.QtCore import Signal, QObject, Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 
@@ -15,14 +15,19 @@ class DataReceiver(QObject):
     """
     data_received = Signal(float)
 
-class MainController:
+class MainController(QObject):
+    alert_signal = Signal(str)      # Funzionalità solo per MacOS
 
     def __init__(self):
+        super().__init__()
+
         self.ui = UiLoader.load_ui("ui/mainwindow.ui")
 
         self.graphics_view = self.ui.findChild(QGraphicsView, "graphicsView")
         self.checkMax = self.ui.findChild(QCheckBox, "maxLineCheckBox")
         self.checkMin = self.ui.findChild(QCheckBox, "minLineCheckBox")
+        self.alertMax = self.ui.findChild(QCheckBox, "alertMaxCheckBox")
+        self.alertMin = self.ui.findChild(QCheckBox, "alertMinCheckBox")
         self.spinMax = self.ui.findChild(QDoubleSpinBox, "maxSpinBox")
         self.spinMin = self.ui.findChild(QDoubleSpinBox, "minSpinBox")
         self.listView = self.ui.findChild(QListView, "listView")
@@ -39,6 +44,8 @@ class MainController:
 
         # Collego i segnali della UI ai metodi del MainController
         self.stopRegBtn.clicked.connect(self.onStopRegBtnClicked)
+        self.alertMax.stateChanged.connect(self.toggle_alert_max)
+        self.alertMin.stateChanged.connect(self.toggle_alert_min)
 
         # Collego i segnali della UI ai metodi del grafico
         self.checkMin.toggled.connect(self.plot.toggle_min_visibility)
@@ -71,8 +78,30 @@ class MainController:
         self.thread = threading.Thread(target=self.listen_udp, daemon=True)
         self.thread.start()
 
+        # Variabile per tracciare l'ultimo alert
+        self.alert_box = None
+
+        # Imposto le soglie iniziali
+        self.alertMaxActive = False
+        self.alertMinActive = False
+        self.lastAlertTime = None
+
+        self.alert_signal.connect(self.show_alert)      # Funzionalità solo per MacOS
+
         self.x_counter = 0
         self.update_counter = 0
+
+    def toggle_alert_max(self, state):
+        """
+        Attiva o disattiva gli alert per il superamento del massimo
+        """
+        self.alertMaxActive = state = 2     # 2 significa spuntato
+
+    def toggle_alert_min(self, state):
+        """
+        Attiva o disattiva gli alert per il superamento del minimo
+        """
+        self.alertMinActive = state = 2
 
     def receive_variable_list(self):
         """
@@ -168,10 +197,30 @@ class MainController:
         self.model.add_data(self.x_counter, value)
         self.x_counter += 1
 
+        if self.alertMaxActive and value > self.plot.max_threshold:
+            self.show_alert(f"Valore sopra soglia: {value:.2f} > {self.plot.max_threshold:.2f}")
+
+        if self.alertMinActive and value < self.plot.min_threshold:
+            self.show_alert(f"Valore sotto soglia: {value:.2f} < {self.plot.min_threshold:.2f}")
+
         self.update_counter += 1
 
         if self.update_counter % 2 == 0:
             self.plot.update_plot()
+
+    def show_alert(self, message):
+        """
+        Mostra un messaggio di alert con una finestra di dialogo
+        """
+        if self.alert_box and self.alert_box.isVisible():
+            self.alert_box.setText(message)
+
+        else:
+            self.alert_box = QMessageBox()
+            self.alert_box.setIcon(QMessageBox.Warning)
+            self.alert_box.setWindowTitle("Alert valore fuori soglia")
+            self.alert_box.setText(message)
+            self.alert_box.show()
 
     def show(self):
         """
