@@ -1,9 +1,37 @@
-import pyqtgraph as pg
-
 import numpy as np
-
+import pyqtgraph as pg
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import Signal, QObject, QThread, QTimer
+
+class PlotUpdateThread(QThread):
+    """
+    Thread per aggiornare il grafico senza bloccare la UI
+    """
+    update_signal = Signal()
+
+    def __init__(self, interval=50):
+        super().__init__()
+
+        self.interval = interval
+
+        self.running = True
+
+    def run(self):
+        """
+        Esegue l'aggiornamento periodico del grafico
+        """
+        while self.running:
+            self.update_signal.emit()
+            self.msleep(self.interval)
+
+    def stop(self):
+        """
+        Ferma il thread in modo sicuro
+        """
+        self.running = False
+
+        self.quit()
+        self.wait()
 
 class LivePlotWidget(QObject):
     toggle_min = Signal(bool)
@@ -11,7 +39,7 @@ class LivePlotWidget(QObject):
     update_min_value = Signal(float)
     update_max_value = Signal(float)
 
-    def __init__(self, graphics_view: QGraphicsView, model):
+    def __init__(self, graphics_view: QGraphicsView, model, max_visible_points=100):
         """
         Inizializza il grafico e lo integra nella QGraphicsView.
         """
@@ -19,6 +47,7 @@ class LivePlotWidget(QObject):
 
         self.model = model
         self.graphics_view = graphics_view
+        self.max_visible_points = max_visible_points  # Numero massimo di punti visibili nella finestra
 
         self.scene = QGraphicsScene()
         self.graphics_view.setScene(self.scene)
@@ -26,11 +55,6 @@ class LivePlotWidget(QObject):
         # Creiamo il widget di PyQtGraph
         self.plot_widget = pg.PlotWidget()
         self.scene.addWidget(self.plot_widget)
-
-        # Inizializza dati del grafico
-        self.full_data_x = np.array([])  # Dati completi
-        self.full_data_y = np.array([])
-        self.max_visible_points = 100  # Numero massimo di punti visibili alla volta
 
         # Linea del grafico
         self.curve = self.plot_widget.plot([], [], pen="y")
@@ -44,12 +68,12 @@ class LivePlotWidget(QObject):
         self.plot_widget.addItem(self.scatter)
 
         # Connetto gli eventi hover e click ai metodi
-        self.scatter.sigHovered.connect(self.show_tooltip)  #TODO: per ora questo non funziona
-        self.scatter.sigClicked.connect(self.show_tooltip)
+        self.scatter.sigHovered.connect(self.show_tooltip)
+        self.scatter.sigClicked.connect(self.on_point_clicked)
 
         # Linee orizzontali interattive
-        self.min_line = pg.InfiniteLine(angle=0, movable=True, pen="r", label="Min", labelOpts={"position":0.1})
-        self.max_line = pg.InfiniteLine(angle=0, movable=True, pen="g", label="Max", labelOpts={"position":0.9})
+        self.min_line = pg.InfiniteLine(angle=0, movable=True, pen="r", label="Min", labelOpts={"position": 0.1})
+        self.max_line = pg.InfiniteLine(angle=0, movable=True, pen="g", label="Max", labelOpts={"position": 0.9})
 
         self.plot_widget.addItem(self.min_line)
         self.plot_widget.addItem(self.max_line)
@@ -62,12 +86,14 @@ class LivePlotWidget(QObject):
         self.min_line.sigDragged.connect(self.min_line_moved)
         self.max_line.sigDragged.connect(self.max_line_moved)
 
-        # Manteniamo il riferimento alla vista corrente
-        self.view_range = [0, self.max_visible_points]
-
         # Soglie iniziali
         self.min_threshold = -1000
         self.max_threshold = 1000
+
+        # Thread per l'aggiornamento del grafico
+        self.update_thread = PlotUpdateThread(interval=50)
+        self.update_thread.update_signal.connect(self.update_plot)
+        self.update_thread.start()
 
     def update_plot(self):
         """
@@ -75,22 +101,24 @@ class LivePlotWidget(QObject):
         """
         x_data, y_data = self.model.get_data()
 
+        if not x_data or not y_data:
+            return
+
+        y_data = np.array(y_data)
+        x_data = np.array(x_data)
+
         self.curve.setData(x_data, y_data)
 
-        # Determina i colori in base alle soglie
-        colors = []
-        for y in y_data:
-            if y < self.min_threshold or y > self.max_threshold:
-                colors.append(pg.mkBrush("r"))
-
-            else:
-                colors.append(pg.mkBrush("y"))
+        colors = np.full(len(y_data), pg.mkBrush("y"), dtype=object)  # Default: Giallo
+        colors[y_data < self.min_threshold] = pg.mkBrush("r")  # Sotto soglia
+        colors[y_data > self.max_threshold] = pg.mkBrush("r")  # Sopra soglia
 
         spots = [{'pos': (x, y), 'brush': colors[i], 'size': 7} for i, (x, y) in enumerate(zip(x_data, y_data))]
         self.scatter.setData(spots)
 
-        if len(x_data) > 100:
-            self.plot_widget.setXRange(x_data[-100], x_data[-1], padding=0)
+        # Mantiene la finestra visibile senza cancellare i dati vecchi
+        if len(x_data) > self.max_visible_points:
+            self.plot_widget.setXRange(x_data[-self.max_visible_points], x_data[-1], padding=0)
 
     def show_tooltip(self, scatter, points):
         """
@@ -98,10 +126,17 @@ class LivePlotWidget(QObject):
         """
         if points:
             point = points[0]
-
             x, y = point.pos()
-
             self.plot_widget.setToolTip(f"X: {x:.2f}, Y: {y:.2f}")
+
+    def on_point_clicked(self, scatter, points):
+        """
+        Gestisce il click su un punto e stampa il valore.
+        """
+        if points:
+            point = points[0]
+            x, y = point.pos()
+            print(f"⚡ Punto cliccato! X: {x:.2f}, Y: {y:.2f}")
 
     def clear_plot(self):
         """
@@ -115,12 +150,14 @@ class LivePlotWidget(QObject):
         Quando la linea del minimo viene trascinata, aggiorna la UI
         """
         self.update_min_value.emit(self.min_line.value())
+        self.update_plot()
 
     def max_line_moved(self):
         """
         Quando la linea del massimo viene trascinata, aggiorna la UI
         """
         self.update_max_value.emit(self.max_line.value())
+        self.update_plot()
 
     def toggle_min_visibility(self, enabled):
         """
@@ -149,4 +186,3 @@ class LivePlotWidget(QObject):
         self.max_threshold = value
         self.max_line.setValue(value)
         self.update_plot()
-
