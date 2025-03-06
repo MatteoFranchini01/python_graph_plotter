@@ -55,6 +55,12 @@ class Ui_MainWindow(object):
         self.stopRegButton = QPushButton(self.widget)
         self.stopRegButton.setObjectName(u"stopRegButton")
         self.stopRegButton.setGeometry(QRect(10, 70, 100, 32))
+        self.alertMaxCheckBox = QCheckBox(self.widget)
+        self.alertMaxCheckBox.setObjectName(u"alertMaxCheckBox")
+        self.alertMaxCheckBox.setGeometry(QRect(10, 110, 85, 20))
+        self.alertMinCheckBox = QCheckBox(self.widget)
+        self.alertMinCheckBox.setObjectName(u"alertMinCheckBox")
+        self.alertMinCheckBox.setGeometry(QRect(10, 140, 85, 20))
 
         self.horizontalLayout.addWidget(self.widget)
 
@@ -77,5 +83,7 @@ class Ui_MainWindow(object):
         self.maxLineCheckBox.setText(QCoreApplication.translate("MainWindow", u"Max line", None))
         self.minLineCheckBox.setText(QCoreApplication.translate("MainWindow", u"Min line", None))
         self.stopRegButton.setText(QCoreApplication.translate("MainWindow", u"Stop Reg", None))
+        self.alertMaxCheckBox.setText(QCoreApplication.translate("MainWindow", u"Alert Max", None))
+        self.alertMinCheckBox.setText(QCoreApplication.translate("MainWindow", u"Alert Min", None))
     # retranslateUi
 
