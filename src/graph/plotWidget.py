@@ -69,7 +69,7 @@ class LivePlotWidget(QObject):
 
         # Connetto gli eventi hover e click ai metodi
         self.scatter.sigHovered.connect(self.show_tooltip)
-        self.scatter.sigClicked.connect(self.on_point_clicked)
+        self.scatter.sigClicked.connect(self.show_tooltip)
 
         # Linee orizzontali interattive
         self.min_line = pg.InfiniteLine(angle=0, movable=True, pen="r", label="Min", labelOpts={"position": 0.1})
@@ -95,6 +95,11 @@ class LivePlotWidget(QObject):
         self.update_thread.update_signal.connect(self.update_plot)
         self.update_thread.start()
 
+        # Creo un testo per il valore dei punti
+        self.value_label = pg.TextItem("", anchor=(0.5, 1.5), color="w")
+        self.plot_widget.addItem(self.value_label)
+        self.value_label.setVisible(False)
+
     def update_plot(self):
         """
         Aggiunge un nuovo valore e aggiorna il grafico senza perdere i dati.
@@ -113,8 +118,12 @@ class LivePlotWidget(QObject):
         colors[y_data < self.min_threshold] = pg.mkBrush("r")  # Sotto soglia
         colors[y_data > self.max_threshold] = pg.mkBrush("r")  # Sopra soglia
 
-        spots = [{'pos': (x, y), 'brush': colors[i], 'size': 7} for i, (x, y) in enumerate(zip(x_data, y_data))]
-        self.scatter.setData(spots)
+        self.scatter.setData(
+            x = x_data,
+            y = y_data,
+            brush = [pg.mkBrush(c) for c in colors],
+            hoverable = True
+        )
 
         # Mantiene la finestra visibile senza cancellare i dati vecchi
         if len(x_data) > self.max_visible_points:
@@ -122,21 +131,28 @@ class LivePlotWidget(QObject):
 
     def show_tooltip(self, scatter, points):
         """
-        Mostra il valore del punto quando il mouse passa sopra
+        Mostra il valore del punto quando il mouse passa sopra.
         """
-        if points:
-            point = points[0]
+        if points is not None and len(points) > 0:
+            point = points[0]  # Prendi il primo punto vicino al mouse
             x, y = point.pos()
-            self.plot_widget.setToolTip(f"X: {x:.2f}, Y: {y:.2f}")
 
-    def on_point_clicked(self, scatter, points):
-        """
-        Gestisce il click su un punto e stampa il valore.
-        """
-        if points:
-            point = points[0]
-            x, y = point.pos()
-            print(f"⚡ Punto cliccato! X: {x:.2f}, Y: {y:.2f}")
+            # Sposta il label sopra il punto e mostra il valore
+            self.value_label.setText(f"📍 {y:.2f}")
+            self.value_label.setPos(x, y)
+            self.value_label.setVisible(True)  # Mostra il valore
+
+        else:
+            self.value_label.setVisible(False)  # Nascondi se non ci sono punti
+
+    # def on_point_clicked(self, scatter, points):
+    #     """
+    #     Gestisce il click su un punto e stampa il valore.
+    #     """
+    #     if points:
+    #         point = points[0]
+    #         x, y = point.pos()
+    #         print(f"⚡ Punto cliccato! X: {x:.2f}, Y: {y:.2f}")
 
     def clear_plot(self):
         """
