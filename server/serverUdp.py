@@ -27,12 +27,16 @@ class UDPServer:
                 if not data:
                     break
 
-                selected_var = data.decode().strip()
+                command = data.decode().strip()
 
-                if selected_var in self.variables:
-                    self.selected_variable = selected_var
+                if command in self.variables:
+                    self.selected_variable = command
 
                     print(f"Variabile selezionata: {self.selected_variable}")
+
+                elif command == "STOP_UDP":
+                    print("Flusso UDP fermato dal client")
+                    self.selected_variable = None
 
             except Exception as e:
                 print(f"Errore TCP: {e}")

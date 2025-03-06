@@ -39,6 +39,14 @@ class LivePlotWidget(QObject):
         self.plot_widget.setMouseEnabled(x=True, y=True)  # Zoom e pan liberi
         self.plot_widget.setLimits(xMin=0)  # Evita di andare a sinistra di 0
 
+        # Scatter plot per i punti con colore variabile
+        self.scatter = pg.ScatterPlotItem(size=7, pen=pg.mkPen(None))
+        self.plot_widget.addItem(self.scatter)
+
+        # Connetto gli eventi hover e click ai metodi
+        self.scatter.sigHovered.connect(self.show_tooltip)  #TODO: per ora questo non funziona
+        self.scatter.sigClicked.connect(self.show_tooltip)
+
         # Linee orizzontali interattive
         self.min_line = pg.InfiniteLine(angle=0, movable=True, pen="r", label="Min", labelOpts={"position":0.1})
         self.max_line = pg.InfiniteLine(angle=0, movable=True, pen="g", label="Max", labelOpts={"position":0.9})
@@ -57,6 +65,10 @@ class LivePlotWidget(QObject):
         # Manteniamo il riferimento alla vista corrente
         self.view_range = [0, self.max_visible_points]
 
+        # Soglie iniziali
+        self.min_threshold = -1000
+        self.max_threshold = 1000
+
     def update_plot(self):
         """
         Aggiunge un nuovo valore e aggiorna il grafico senza perdere i dati.
@@ -65,14 +77,38 @@ class LivePlotWidget(QObject):
 
         self.curve.setData(x_data, y_data)
 
+        # Determina i colori in base alle soglie
+        colors = []
+        for y in y_data:
+            if y < self.min_threshold or y > self.max_threshold:
+                colors.append(pg.mkBrush("r"))
+
+            else:
+                colors.append(pg.mkBrush("y"))
+
+        spots = [{'pos': (x, y), 'brush': colors[i], 'size': 7} for i, (x, y) in enumerate(zip(x_data, y_data))]
+        self.scatter.setData(spots)
+
         if len(x_data) > 100:
             self.plot_widget.setXRange(x_data[-100], x_data[-1], padding=0)
+
+    def show_tooltip(self, scatter, points):
+        """
+        Mostra il valore del punto quando il mouse passa sopra
+        """
+        if points:
+            point = points[0]
+
+            x, y = point.pos()
+
+            self.plot_widget.setToolTip(f"X: {x:.2f}, Y: {y:.2f}")
 
     def clear_plot(self):
         """
         Cancella il grafico rimuovendo tutti i dati
         """
         self.curve.setData([], [])
+        self.scatter.setData([])
 
     def min_line_moved(self):
         """
@@ -102,11 +138,15 @@ class LivePlotWidget(QObject):
         """
         Imposta manualmente il valore della linea del minimo
         """
+        self.min_threshold = value
         self.min_line.setValue(value)
+        self.update_plot()
 
     def set_max_value(self, value):
         """
         Imposta manualmente il valore della linea del massimo
         """
+        self.max_threshold = value
         self.max_line.setValue(value)
+        self.update_plot()
 

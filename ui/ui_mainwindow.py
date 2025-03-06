@@ -17,7 +17,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QGraphicsView,
     QHBoxLayout, QListView, QMainWindow, QMenuBar,
-    QSizePolicy, QStatusBar, QWidget)
+    QPushButton, QSizePolicy, QStatusBar, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -52,6 +52,9 @@ class Ui_MainWindow(object):
         self.listView = QListView(self.widget)
         self.listView.setObjectName(u"listView")
         self.listView.setGeometry(QRect(0, 170, 201, 381))
+        self.stopRegButton = QPushButton(self.widget)
+        self.stopRegButton.setObjectName(u"stopRegButton")
+        self.stopRegButton.setGeometry(QRect(10, 70, 100, 32))
 
         self.horizontalLayout.addWidget(self.widget)
 
@@ -73,5 +76,6 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.maxLineCheckBox.setText(QCoreApplication.translate("MainWindow", u"Max line", None))
         self.minLineCheckBox.setText(QCoreApplication.translate("MainWindow", u"Min line", None))
+        self.stopRegButton.setText(QCoreApplication.translate("MainWindow", u"Stop Reg", None))
     # retranslateUi
 

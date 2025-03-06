@@ -1,7 +1,7 @@
 import threading
 import socket
 
-from PySide6.QtWidgets import QGraphicsView, QCheckBox, QDoubleSpinBox, QListView, QAbstractItemView
+from PySide6.QtWidgets import QGraphicsView, QCheckBox, QDoubleSpinBox, QListView, QAbstractItemView, QPushButton
 from PySide6.QtCore import Signal, QObject, Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 
@@ -26,6 +26,7 @@ class MainController:
         self.spinMax = self.ui.findChild(QDoubleSpinBox, "maxSpinBox")
         self.spinMin = self.ui.findChild(QDoubleSpinBox, "minSpinBox")
         self.listView = self.ui.findChild(QListView, "listView")
+        self.stopRegBtn = self.ui.findChild(QPushButton, "stopRegButton")
 
         # Configurazione delle double spin box
         self.spinMax.setMinimum(-1000.0)
@@ -35,6 +36,9 @@ class MainController:
 
         self.model = ModelData()
         self.plot = LivePlotWidget(self.graphics_view, self.model)
+
+        # Collego i segnali della UI ai metodi del MainController
+        self.stopRegBtn.clicked.connect(self.onStopRegBtnClicked)
 
         # Collego i segnali della UI ai metodi del grafico
         self.checkMin.toggled.connect(self.plot.toggle_min_visibility)
@@ -119,17 +123,11 @@ class MainController:
 
                     self.tcp_sock.sendall(b"STOP")
 
-        # selected_variable = self.variable_model.data(index)
+    def onStopRegBtnClicked(self):
+        if self.selected_variable:
+            self.tcp_sock.sendall(b"STOP_UDP")
 
-        # if selected_variable != self.selected_variable:
-        #     self.selected_variable = selected_variable
-
-        #     self.model.clear_data() # resetta il grafico
-
-        #     self.plot.update_plot()
-
-        #     # Invia la variabile selezionata via TCP
-        #     self.tcp_sock.sendall(selected_variable.encode())
+            print("Flusso UDP fermato, il grafico rimane visibile")
 
     def listen_udp(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
