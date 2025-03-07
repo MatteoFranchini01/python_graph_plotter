@@ -33,8 +33,10 @@
 
 import threading
 import socket
-
-from PySide6.QtWidgets import QGraphicsView, QCheckBox, QDoubleSpinBox, QListView, QAbstractItemView, QPushButton, QMessageBox
+from PySide6.QtWidgets import (
+    QGraphicsView, QCheckBox, QDoubleSpinBox, QListView, QAbstractItemView,
+    QPushButton, QMessageBox, QGridLayout, QWidget
+)
 from PySide6.QtCore import Signal, QObject, Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 
@@ -44,106 +46,78 @@ from src.model.ModelData import ModelData
 
 class DataReceiver(QObject):
     """
-    Segnale per aggiornare il grafico nel thread principale
+    Segnale per aggiornare il grafico nel thread principale.
     """
-    data_received = Signal(float)
+    data_received = Signal(str, float)  # Segnale per variabile e valore ricevuto
 
 class MainController(QObject):
-    alert_signal = Signal(str)      # Funzionalità solo per MacOS
+    MAX_GRAPHS = 4  # Numero massimo di grafici visualizzabili
+    BASE_UDP_PORT = 5005  # Porta di base per la comunicazione UDP
+
+    alert_signal = Signal(str)  # Segnale per gli alert su MacOS
 
     def __init__(self):
         super().__init__()
 
         self.ui = UiLoader.load_ui("ui/mainwindow.ui")
 
-        self.graphics_view = self.ui.findChild(QGraphicsView, "graphicsView")
-        self.checkMax = self.ui.findChild(QCheckBox, "maxLineCheckBox")
-        self.checkMin = self.ui.findChild(QCheckBox, "minLineCheckBox")
-        self.alertMax = self.ui.findChild(QCheckBox, "alertMaxCheckBox")
-        self.alertMin = self.ui.findChild(QCheckBox, "alertMinCheckBox")
-        self.spinMax = self.ui.findChild(QDoubleSpinBox, "maxSpinBox")
-        self.spinMin = self.ui.findChild(QDoubleSpinBox, "minSpinBox")
+        # Riferimenti agli elementi dell'interfaccia utente
+        self.graphics_container = self.ui.findChild(QWidget, "graphicsContainer")
         self.listView = self.ui.findChild(QListView, "listView")
         self.stopRegBtn = self.ui.findChild(QPushButton, "stopRegButton")
 
-        # Configurazione delle double spin box
-        self.spinMax.setMinimum(-1000.0)
-        self.spinMax.setMaximum(1000.0)
-        self.spinMin.setMinimum(-1000.0)
-        self.spinMax.setMaximum(1000.0)
+        # Layout per i grafici in griglia
+        self.layout = QGridLayout()
+        self.graphics_container.setLayout(self.layout)
 
         self.model = ModelData()
-        self.plot = LivePlotWidget(self.graphics_view, self.model)
+        self.plots = {}  # Dizionario per tenere traccia dei grafici attivi
+        self.selected_variables = {}  # Variabili selezionate e relative socket/thread
 
-        # Collego i segnali della UI ai metodi del MainController
-        self.stopRegBtn.clicked.connect(self.onStopRegBtnClicked)
-        self.alertMax.stateChanged.connect(self.toggle_alert_max)
-        self.alertMin.stateChanged.connect(self.toggle_alert_min)
-
-        # Collego i segnali della UI ai metodi del grafico
-        self.checkMin.toggled.connect(self.plot.toggle_min_visibility)
-        self.checkMax.toggled.connect(self.plot.toggle_max_visibility)
-        self.spinMin.valueChanged.connect(self.plot.set_min_value)
-        self.spinMax.valueChanged.connect(self.plot.set_max_value)
-
-        # Collego i segnali del grafico alla UI
-        self.plot.update_min_value.connect(self.spinMin.setValue)
-        self.plot.update_max_value.connect(self.spinMax.setValue)
-
-        # Connessione con il server
-        self.host = "127.0.0.1"
-        self.udp_port = 5005
-        self.tcp_port = 6000
-        self.selected_variable = None
-
-        # Comunicazione TCP per ottenere la lista di variabili
-        self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.tcp_sock.connect((self.host, self.tcp_port))
-
-        # Ricezione della lista di variabili
-        self.receive_variable_list()
-
-        # Configurazione della QListView come una lista con checkbox
+        # Configurazione della QListView come lista con checkbox
         self.listView.setSelectionMode(QAbstractItemView.NoSelection)
         self.listView.clicked.connect(self.on_variable_selected)
 
-        # Avvio del thread per ricevere dati UDP
-        self.thread = threading.Thread(target=self.listen_udp, daemon=True)
-        self.thread.start()
+        # Connessione al server TCP per ottenere la lista delle variabili
+        self.host = "127.0.0.1"
+        self.tcp_port = 6000
 
-        # Variabile per tracciare l'ultimo alert
-        self.alert_box = None
+        self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_sock.connect((self.host, self.tcp_port))
 
-        # Imposto le soglie iniziali
-        self.alertMaxActive = False
-        self.alertMinActive = False
-        self.lastAlertTime = None
+        self.receive_variable_list()
 
-        self.alert_signal.connect(self.show_alert)      # Funzionalità solo per MacOS
+        self.alert_box = None  # Variabile per l'alert attuale
+        self.alert_signal.connect(self.show_alert)
 
-        self.x_counter = 0
-        self.update_counter = 0
-
-    def toggle_alert_max(self, state):
+    def listen_udp(self, variable_name, port):
         """
-        Attiva o disattiva gli alert per il superamento del massimo
+        Avvia un thread UDP per ogni variabile selezionata, su una porta differente.
         """
-        self.alertMaxActive = (state == 2)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind((self.host, port))  # Assegna una porta unica per ogni variabile
 
-    def toggle_alert_min(self, state):
-        """
-        Attiva o disattiva gli alert per il superamento del minimo
-        """
-        self.alertMinActive = (state == 2)
+        while variable_name in self.selected_variables:
+            data, _ = sock.recvfrom(1024)
+            try:
+                message = data.decode().strip()
+                parts = message.split(":")
+                if len(parts) == 2:
+                    var_name, value_str = parts
+                    value = float(value_str)
+                    if var_name in self.selected_variables:
+                        self.selected_variables[var_name]["receiver"].data_received.emit(var_name, value)
+                else:
+                    raise ValueError("Formato messaggio non valido")
+            except ValueError:
+                print(f"Errore nella conversione del valore: {data}")
 
     def receive_variable_list(self):
         """
-        Riceve la lista delle variabili dal server e la popola nella QListView
+        Riceve la lista delle variabili dal server e la popola nella QListView.
         """
         data = self.tcp_sock.recv(1024).decode().strip()
-
         variable_list = data.split(",")
-
         self.variable_model = QStandardItemModel()
 
         for var in variable_list:
@@ -156,117 +130,94 @@ class MainController(QObject):
 
     def on_variable_selected(self, index):
         """
-        Quando l'utente seleziona una variabile, invia il nome al server via TCP
+        Quando l'utente seleziona una variabile, avvia un nuovo thread UDP.
         """
         item = self.variable_model.itemFromIndex(index)
-
         if item.isCheckable():
             checked = item.checkState() == Qt.Checked
             selected_variable = item.text()
 
             if checked:
-                if selected_variable != self.selected_variable:
-                    self.selected_variable = selected_variable
+                if len(self.selected_variables) >= self.MAX_GRAPHS:
+                    self.show_alert("⚠️ Massimo 4 variabili selezionabili! Deseleziona una variabile per aggiungerne un'altra.")
+                    item.setCheckState(Qt.Unchecked)
+                    return
 
-                    self.model.clear_data()
+                # Assegna una porta UDP unica
+                port = self.BASE_UDP_PORT + len(self.selected_variables)
 
-                    self.plot.clear_plot()
-                    self.plot.update_plot()
-
-                    self.tcp_sock.sendall(selected_variable.encode())
+                self.selected_variables[selected_variable] = {
+                    "thread": threading.Thread(target=self.listen_udp, args=(selected_variable, port), daemon=True),
+                    "receiver": DataReceiver(),
+                    "port": port
+                }
+                self.selected_variables[selected_variable]["thread"].start()
+                self.selected_variables[selected_variable]["receiver"].data_received.connect(self.on_data_received)
+                self.add_graph(selected_variable)
 
             else:
-                if selected_variable == self.selected_variable:
-                    self.selected_variable = None
+                self.remove_graph(selected_variable)
+                if selected_variable in self.selected_variables:
+                    del self.selected_variables[selected_variable]
 
-                    self.model.clear_data()
+            self.update_layout()
 
-                    self.plot.clear_plot()
-
-                    self.tcp_sock.sendall(b"STOP")
-
-    def onStopRegBtnClicked(self):
-        if self.selected_variable:
-            self.tcp_sock.sendall(b"STOP_UDP")
-
-            print("Flusso UDP fermato, il grafico rimane visibile")
-
-    def listen_udp(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind((self.host, self.udp_port))
-
-        self.receiver = DataReceiver()
-        self.receiver.data_received.connect(self.on_data_received)
-
-        while True:
-            if not self.selected_variable:
-                continue
-
-            data, _ = self.sock.recvfrom(1024)
-
-            try:
-                message = data.decode().strip()
-
-                parts = message.split(":")
-
-                if len(parts) == 2:
-                    var_name, value_str = parts
-                    value = float(value_str)
-
-                    self.receiver.data_received.emit(value)
-
-                    self.x_counter += 1
-
-                else:
-                    raise ValueError("Formato messaggio non valido")
-
-            except ValueError:
-                print(f"Errore nella conversione del valore: {data}")
-
-    def on_data_received(self, value):
+    def add_graph(self, variable_name):
         """
-        Gestisce il dato ricevuto e aggiorna il grafico
+        Aggiunge un nuovo grafico per la variabile selezionata.
         """
-        self.model.add_data(self.x_counter, value)
-        self.x_counter += 1
+        plot_widget = LivePlotWidget(QGraphicsView(), self.model)
+        self.plots[variable_name] = plot_widget
+        self.layout.addWidget(plot_widget.graphics_view)
 
-        if self.alertMaxActive and value > self.plot.max_threshold:
-            self.show_alert(f"Valore sopra soglia: {value:.2f} > {self.plot.max_threshold:.2f}")
+    def remove_graph(self, variable_name):
+        """
+        Rimuove il grafico quando una variabile viene deselezionata.
+        """
+        if variable_name in self.plots:
+            plot_widget = self.plots.pop(variable_name)
+            self.layout.removeWidget(plot_widget.graphics_view)
+            plot_widget.graphics_view.deleteLater()
 
-        if self.alertMinActive and value < self.plot.min_threshold:
-            self.show_alert(f"Valore sotto soglia: {value:.2f} < {self.plot.min_threshold:.2f}")
+    def update_layout(self):
+        """
+        Aggiorna la distribuzione dei grafici in base alle variabili selezionate.
+        """
+        row_col_map = {1: (1, 1), 2: (1, 2), 3: (2, 2), 4: (2, 2)}
+        num_vars = len(self.selected_variables)
+        rows, cols = row_col_map.get(num_vars, (1, 1))
 
-        self.update_counter += 1
+        for i, (var, plot) in enumerate(self.plots.items()):
+            self.layout.addWidget(plot.graphics_view, i // cols, i % cols)
 
-        if self.update_counter % 2 == 0:
-            self.plot.update_plot()
+    def on_data_received(self, variable_name, value):
+        """
+        Gestisce il dato ricevuto e aggiorna il grafico corrispondente.
+        """
+        if variable_name in self.plots:
+            self.plots[variable_name].update_plot()
 
     def show_alert(self, message):
         """
-        Mostra un messaggio di alert con una finestra di dialogo
+        Mostra un avviso se si superano le 4 variabili selezionate.
         """
         if self.alert_box and self.alert_box.isVisible():
             self.alert_box.setText(message)
-
         else:
             self.alert_box = QMessageBox()
             self.alert_box.setIcon(QMessageBox.Warning)
-            self.alert_box.setWindowTitle("Alert valore fuori soglia")
+            self.alert_box.setWindowTitle("Limite Grafici")
             self.alert_box.setText(message)
-
-            self.alert_box.setWindowModality(Qt.NonModal)  # Permette interazione con la UI sottostante
-            self.alert_box.setAttribute(Qt.WA_DeleteOnClose)  # Chiude e libera la memoria quando
-
-            # Connetto il segnale di chiusura alla funzione che resetta self.alert_box
+            self.alert_box.setWindowModality(Qt.NonModal)
+            self.alert_box.setAttribute(Qt.WA_DeleteOnClose)
             self.alert_box.finished.connect(self.reset_alert_box)
-
-            self.alert_box.show()  # Usa show() per NON bloccare la UI
-            self.alert_box.raise_()  # Porta la finestra in primo piano
-            self.alert_box.activateWindow()  # Assicura che riceva il
+            self.alert_box.show()
+            self.alert_box.raise_()
+            self.alert_box.activateWindow()
 
     def reset_alert_box(self):
         """
-        Resetta la variabile self.alert_box quando l'alert viene chiuso
+        Resetta la variabile alert_box quando l'alert viene chiuso.
         """
         self.alert_box = None
 
