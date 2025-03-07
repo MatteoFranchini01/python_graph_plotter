@@ -95,22 +95,25 @@ class MainController(QObject):
         Avvia un thread UDP per ogni variabile selezionata, su una porta differente.
         """
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # ✅ Evita errori di indirizzo in uso
         sock.bind((self.host, port))  # Assegna una porta unica per ogni variabile
 
         while variable_name in self.selected_variables:
-            data, _ = sock.recvfrom(1024)
             try:
+                data, _ = sock.recvfrom(1024)
                 message = data.decode().strip()
                 parts = message.split(":")
                 if len(parts) == 2:
                     var_name, value_str = parts
                     value = float(value_str)
+
+                    print(f"📥 Ricevuto: {var_name} = {value}")  # DEBUG
+
                     if var_name in self.selected_variables:
                         self.selected_variables[var_name]["receiver"].data_received.emit(var_name, value)
-                else:
-                    raise ValueError("Formato messaggio non valido")
-            except ValueError:
-                print(f"Errore nella conversione del valore: {data}")
+            except Exception as e:
+                print(f"⚠️ Errore ricezione UDP {variable_name}: {e}")
+
 
     def receive_variable_list(self):
         """
@@ -130,7 +133,7 @@ class MainController(QObject):
 
     def on_variable_selected(self, index):
         """
-        Quando l'utente seleziona una variabile, avvia un nuovo thread UDP.
+        Quando l'utente seleziona una variabile, avvia un nuovo thread UDP e invia la richiesta al server.
         """
         item = self.variable_model.itemFromIndex(index)
         if item.isCheckable():
@@ -143,6 +146,10 @@ class MainController(QObject):
                     item.setCheckState(Qt.Unchecked)
                     return
 
+                # Invia la richiesta al server per iniziare a inviare dati per questa variabile
+                print(f"📤 Inviando al server: {selected_variable}")  # DEBUG
+                self.tcp_sock.sendall(selected_variable.encode())
+
                 # Assegna una porta UDP unica
                 port = self.BASE_UDP_PORT + len(self.selected_variables)
 
@@ -153,14 +160,19 @@ class MainController(QObject):
                 }
                 self.selected_variables[selected_variable]["thread"].start()
                 self.selected_variables[selected_variable]["receiver"].data_received.connect(self.on_data_received)
+
                 self.add_graph(selected_variable)
 
             else:
+                print(f"🛑 Stop invio dati per: {selected_variable}")  # DEBUG
+                self.tcp_sock.sendall(f"STOP:{selected_variable}".encode())
+
                 self.remove_graph(selected_variable)
                 if selected_variable in self.selected_variables:
                     del self.selected_variables[selected_variable]
 
             self.update_layout()
+
 
     def add_graph(self, variable_name):
         """
@@ -172,12 +184,18 @@ class MainController(QObject):
 
     def remove_graph(self, variable_name):
         """
-        Rimuove il grafico quando una variabile viene deselezionata.
+        Rimuove il grafico quando una variabile viene deselezionata e chiude la connessione UDP.
         """
         if variable_name in self.plots:
             plot_widget = self.plots.pop(variable_name)
             self.layout.removeWidget(plot_widget.graphics_view)
             plot_widget.graphics_view.deleteLater()
+
+        # Chiudi il thread UDP
+        if variable_name in self.selected_variables:
+            self.selected_variables[variable_name]["thread"] = None  # ✅ Termina il thread
+            del self.selected_variables[variable_name]
+
 
     def update_layout(self):
         """

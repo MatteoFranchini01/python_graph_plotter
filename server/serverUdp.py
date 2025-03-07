@@ -31,79 +31,100 @@
 ===============================================================================
 """
 
-import socket
-import time
-import random
 import threading
+import socket
+import random
+import time
 
 class UDPServer:
-    def __init__(self, host="127.0.0.1", tcp_port=6000, udp_port=5005):
+    def __init__(self, host="127.0.0.1", tcp_port=6000, base_udp_port=5005):
         self.host = host
         self.tcp_port = tcp_port
-        self.udp_port = udp_port
-
+        self.base_udp_port = base_udp_port  # Porta iniziale per la trasmissione UDP
         self.variables = ["Temperatura", "Pressione", "Umidità", "Velocità", "Altitudine"]
 
-        self.selected_variable = None
+        self.selected_variables = {}  # Dizionario per tenere traccia delle variabili selezionate e delle loro porte
+        self.tcp_sock = None  # Socket TCP per la comunicazione con il client
 
     def handle_client(self, conn):
         """
-        Invia la lista delle variabili al client via TCP
+        Invia la lista delle variabili al client via TCP e gestisce le selezioni.
         """
         variables_str = ",".join(self.variables)
+        print(f"📡 Inviando lista variabili al client: {variables_str}")  # DEBUG
         conn.sendall(variables_str.encode())
 
         while True:
             try:
                 data = conn.recv(1024)
-
                 if not data:
+                    print("⚠️ Connessione TCP chiusa dal client.")
                     break
 
                 command = data.decode().strip()
+                print(f"📥 Ricevuto comando dal client: {command}")  # DEBUG
 
                 if command in self.variables:
-                    self.selected_variable = command
+                    if command in self.selected_variables:
+                        print(f"⚠️ {command} è già selezionata.")
+                        continue
 
-                    print(f"Variabile selezionata: {self.selected_variable}")
+                    udp_port = self.base_udp_port + len(self.selected_variables)
+                    self.selected_variables[command] = udp_port
+
+                    print(f"✅ Variabile selezionata: {command} → Porta UDP {udp_port}")
+
+                    threading.Thread(target=self.start_udp_server, args=(command, udp_port), daemon=True).start()
 
                 elif command == "STOP_UDP":
-                    print("Flusso UDP fermato dal client")
-                    self.selected_variable = None
+                    print("🛑 Flusso UDP fermato per tutte le variabili.")
+                    self.selected_variables.clear()
+
+                elif command.startswith("STOP:"):
+                    variable_to_stop = command.split(":")[1]
+                    if variable_to_stop in self.selected_variables:
+                        print(f"🛑 Flusso UDP fermato per {variable_to_stop}")
+                        del self.selected_variables[variable_to_stop]
 
             except Exception as e:
-                print(f"Errore TCP: {e}")
+                print(f"❌ Errore TCP: {e}")
                 break
 
     def start_tcp_server(self):
         """
-        Avvia il server TCP per comunicare con il client
+        Avvia il server TCP per comunicare con il client.
         """
-        tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        tcp_sock.bind((self.host, self.tcp_port))
-        tcp_sock.listen(1)
+        self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_sock.bind((self.host, self.tcp_port))
+        self.tcp_sock.listen(1)
 
-        print(f"Server TCP in ascolto su {self.host}:{self.tcp_port}")
-
-        conn, _ = tcp_sock.accept()
-
-        print("Client connesso")
-
-        self.handle_client(conn)
-
-    def start_udp_server(self):
-        udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print(f"📡 Server TCP in ascolto su {self.host}:{self.tcp_port}")
 
         while True:
-            if self.selected_variable:
+            conn, _ = self.tcp_sock.accept()
+            print("✅ Client connesso")
+            self.handle_client(conn)
+
+    def start_udp_server(self, variable_name, udp_port):
+        """
+        Invia dati randomici della variabile selezionata al client via UDP.
+        """
+        udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print(f"📤 Thread UDP avviato per {variable_name} sulla porta {udp_port}")
+
+        while variable_name in self.selected_variables:
+            try:
                 value = random.uniform(-10, 10)
-
-                message = f"{self.selected_variable}:{value}"
-
-                udp_sock.sendto(message.encode(), (self.host, self.udp_port))
-
-            time.sleep(0.1)
+                message = f"{variable_name}:{value}"
+                udp_sock.sendto(message.encode(), (self.host, udp_port))
+                print(f"📨 Inviato {variable_name}: {value} su {udp_port}")  # DEBUG
+                time.sleep(0.1)
+            except Exception as e:
+                print(f"⚠️ Errore invio UDP {variable_name}: {e}")
+                break
 
     def start(self):
+        """
+        Avvia il server TCP e i thread UDP in parallelo.
+        """
         threading.Thread(target=self.start_tcp_server, daemon=True).start()
-        threading.Thread(target=self.start_udp_server, daemon=True).start()
