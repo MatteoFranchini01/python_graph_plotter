@@ -98,6 +98,8 @@ class MainController(QObject):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # ✅ Evita errori di indirizzo in uso
         sock.bind((self.host, port))  # Assegna una porta unica per ogni variabile
 
+        print(f"✅ Thread UDP avviato per {variable_name} sulla porta {port}")  # DEBUG
+
         while variable_name in self.selected_variables:
             try:
                 data, _ = sock.recvfrom(1024)
@@ -110,10 +112,16 @@ class MainController(QObject):
                     print(f"📥 Ricevuto: {var_name} = {value}")  # DEBUG
 
                     if var_name in self.selected_variables:
+                        # Aggiunge il dato al modello
+                        x_value = len(self.model.get_data(var_name)[0])  # Conta i punti attuali
+                        self.model.add_data(var_name, x_value, value)  # ✅ Salva nel modello
+
+                        print(f"💾 Dato salvato nel modello: {var_name} (X={x_value}, Y={value})")  # DEBUG
+
+                        # Emetti il segnale per aggiornare il grafico
                         self.selected_variables[var_name]["receiver"].data_received.emit(var_name, value)
             except Exception as e:
                 print(f"⚠️ Errore ricezione UDP {variable_name}: {e}")
-
 
     def receive_variable_list(self):
         """
@@ -210,10 +218,17 @@ class MainController(QObject):
 
     def on_data_received(self, variable_name, value):
         """
-        Gestisce il dato ricevuto e aggiorna il grafico corrispondente.
+        Gestisce il dato ricevuto e aggiorna il modello e il grafico corrispondente.
         """
+        print(f"📡 Segnale ricevuto per {variable_name}: {value}")  # DEBUG
+
         if variable_name in self.plots:
-            self.plots[variable_name].update_plot()
+            x_value = len(self.model.get_data(variable_name)[0])  # Conta quanti punti ha già
+            self.model.add_data(variable_name, x_value, value)  # Aggiunge il dato al modello
+            print(f"📊 Aggiornamento grafico per {variable_name}")  # DEBUG
+            self.plots[variable_name].update_plot(variable_name)  # Aggiorna solo il grafico corretto
+        else:
+            print(f"⚠️ Variabile {variable_name} ricevuta ma non trovata nei grafici.")
 
     def show_alert(self, message):
         """

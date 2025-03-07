@@ -33,18 +33,25 @@
 
 class ModelData:
     def __init__(self):
-        self.full_data_x = []
+        """Inizializza un dizionario per memorizzare i dati di ogni variabile"""
+        self.data = {}  # Dizionario con struttura: {"Temperatura": {"x": [...], "y": [...]}, ...}
 
-        self.full_data_y = []
+    def add_data(self, variable_name, x_value, y_value):
+        """Aggiunge un nuovo dato alla variabile specificata"""
+        if variable_name not in self.data:
+            self.data[variable_name] = {"x": [], "y": []}
 
-    def add_data(self, x, y):
-        self.full_data_x.append(x)
+        self.data[variable_name]["x"].append(x_value)
+        self.data[variable_name]["y"].append(y_value)
 
-        self.full_data_y.append(y)
+    def get_data(self, variable_name):
+        """Restituisce i dati per la variabile specificata"""
+        if variable_name in self.data:
+            return self.data[variable_name]["x"], self.data[variable_name]["y"]
+        return [], []
 
-    def get_data(self):
-        return self.full_data_x, self.full_data_y
+    def clear_data(self, variable_name):
+        """Cancella i dati di una variabile specifica"""
+        if variable_name in self.data:
+            self.data[variable_name] = {"x": [], "y": []}
 
-    def clear_data(self):
-        self.full_data_x = []
-        self.full_data_y = []

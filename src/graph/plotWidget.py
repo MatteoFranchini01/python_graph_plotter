@@ -133,11 +133,11 @@ class LivePlotWidget(QObject):
         self.plot_widget.addItem(self.value_label)
         self.value_label.setVisible(False)
 
-    def update_plot(self):
+    def update_plot(self, variable_name):
         """
-        Aggiunge un nuovo valore e aggiorna il grafico senza perdere i dati.
+        Aggiorna il grafico per la variabile specificata.
         """
-        x_data, y_data = self.model.get_data()
+        x_data, y_data = self.model.get_data(variable_name)  # Recupera solo i dati della variabile selezionata
 
         if not x_data or not y_data:
             return
@@ -145,22 +145,24 @@ class LivePlotWidget(QObject):
         y_data = np.array(y_data)
         x_data = np.array(x_data)
 
-        self.curve.setData(x_data, y_data)
+        self.curve.setData(x_data, y_data)  # Aggiorna la curva del grafico
 
+        # Determina i colori in base alle soglie
         colors = np.full(len(y_data), pg.mkBrush("y"), dtype=object)  # Default: Giallo
         colors[y_data < self.min_threshold] = pg.mkBrush("r")  # Sotto soglia
         colors[y_data > self.max_threshold] = pg.mkBrush("r")  # Sopra soglia
 
         self.scatter.setData(
-            x = x_data,
-            y = y_data,
-            brush = [pg.mkBrush(c) for c in colors],
-            hoverable = True
+            x=x_data,
+            y=y_data,
+            brush=[pg.mkBrush(c) for c in colors],
+            hoverable=True
         )
 
         # Mantiene la finestra visibile senza cancellare i dati vecchi
         if len(x_data) > self.max_visible_points:
             self.plot_widget.setXRange(x_data[-self.max_visible_points], x_data[-1], padding=0)
+
 
     def show_tooltip(self, scatter, points):
         """
