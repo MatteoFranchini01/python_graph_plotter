@@ -54,7 +54,11 @@ class MainController(QObject):
     MAX_GRAPHS = 4  # Numero massimo di grafici visualizzabili
     BASE_UDP_PORT = 5005  # Porta di base per la comunicazione UDP
 
-    alert_signal = Signal(str)  # Segnale per gli alert su MacOS
+    # Segnale per gli alert su MacOS
+    alert_signal_1 = Signal(str)
+    alert_signal_2 = Signal(str)
+    alert_signal_3 = Signal(str)
+    alert_signal_4 = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -64,7 +68,114 @@ class MainController(QObject):
         # Riferimenti agli elementi dell'interfaccia utente
         self.graphics_container = self.ui.findChild(QWidget, "graphicsContainer")
         self.listView = self.ui.findChild(QListView, "listView")
-        self.stopRegBtn = self.ui.findChild(QPushButton, "stopRegButton")
+
+        # Riferimenti agli elementi dell'UI del primo grafico
+        self.checkMax_1 = self.ui.findChild(QCheckBox, "maxLineCheckBox")
+        self.checkMin_1 = self.ui.findChild(QCheckBox, "minLineCheckBox")
+        self.alertMax_1 = self.ui.findChild(QCheckBox, "alertMaxCheckBox")
+        self.alertMin_1 = self.ui.findChild(QCheckBox, "alertMinCheckBox")
+        self.spinMax_1 = self.ui.findChild(QDoubleSpinBox, "maxSpinBox")
+        self.spinMin_1 = self.ui.findChild(QDoubleSpinBox, "minSpinBox")
+        self.stopRegBtn_1 = self.ui.findChild(QPushButton, "stopRegButton")
+
+        # Riferimenti agli elementi dell'UI del secondo grafico
+        self.checkMax_2 = self.ui.findChild(QCheckBox, "maxLineCheckBox_2")
+        self.checkMin_2 = self.ui.findChild(QCheckBox, "minLineCheckBox_2")
+        self.alertMax_2 = self.ui.findChild(QCheckBox, "alertMaxCheckBox_2")
+        self.alertMin_2 = self.ui.findChild(QCheckBox, "alertMinCheckBox_2")
+        self.spinMax_2 = self.ui.findChild(QDoubleSpinBox, "maxSpinBox_2")
+        self.spinMin_2 = self.ui.findChild(QDoubleSpinBox, "minSpinBox_2")
+        self.stopRegBtn_2 = self.ui.findChild(QPushButton, "stopRegButton_2")
+
+        # Riferimenti agli elementi dell'UI del terzo grafico
+        self.checkMax_2 = self.ui.findChild(QCheckBox, "maxLineCheckBox_3")
+        self.checkMin_2 = self.ui.findChild(QCheckBox, "minLineCheckBox_3")
+        self.alertMax_2 = self.ui.findChild(QCheckBox, "alertMaxCheckBox_3")
+        self.alertMin_2 = self.ui.findChild(QCheckBox, "alertMinCheckBox_3")
+        self.spinMax_2 = self.ui.findChild(QDoubleSpinBox, "maxSpinBox_3")
+        self.spinMin_2 = self.ui.findChild(QDoubleSpinBox, "minSpinBox_3")
+        self.stopRegBtn_2 = self.ui.findChild(QPushButton, "stopRegButton_3")
+
+        # Riferimenti agli elementi dell'UI del quarto grafico
+        self.checkMax_2 = self.ui.findChild(QCheckBox, "maxLineCheckBox_4")
+        self.checkMin_2 = self.ui.findChild(QCheckBox, "minLineCheckBox_4")
+        self.alertMax_2 = self.ui.findChild(QCheckBox, "alertMaxCheckBox_4")
+        self.alertMin_2 = self.ui.findChild(QCheckBox, "alertMinCheckBox_4")
+        self.spinMax_2 = self.ui.findChild(QDoubleSpinBox, "maxSpinBox_4")
+        self.spinMin_2 = self.ui.findChild(QDoubleSpinBox, "minSpinBox_4")
+        self.stopRegBtn_2 = self.ui.findChild(QPushButton, "stopRegButton_4")
+
+        # Configurazioni delle double spin box dei quattro grafici
+        self.spinMax_1.setMinimum(-1000.0)
+        self.spinMax_1.setMaximum(1000.0)
+        self.spinMin_1.setMinimum(-1000.0)
+        self.spinMax_1.setMaximum(1000.0)
+
+        self.spinMax_2.setMinimum(-1000.0)
+        self.spinMax_2.setMaximum(1000.0)
+        self.spinMin_2.setMinimum(-1000.0)
+        self.spinMax_2.setMaximum(1000.0)
+
+        self.spinMax_3.setMinimum(-1000.0)
+        self.spinMax_3.setMaximum(1000.0)
+        self.spinMin_3.setMinimum(-1000.0)
+        self.spinMax_3.setMaximum(1000.0)
+
+        self.spinMax_4.setMinimum(-1000.0)
+        self.spinMax_4.setMaximum(1000.0)
+        self.spinMin_4.setMinimum(-1000.0)
+        self.spinMax_4.setMaximum(1000.0)
+
+        # Collego i segnali della UI ai metodi del MainController
+        self.stopRegBtn_1.clicked.connect(lambda: self.onStopRegBtnClicked(1))
+        self.alertMax_1.stateChanged.connect(lambda state: self.toggle_alert_max(1, state))
+        self.alertMin_1.stateChanged.connect(lambda state: self.toggle_alert_min(1, state))
+
+        self.stopRegBtn_2.clicked.connect(lambda: self.onStopRegBtnClicked(2))
+        self.alertMax_2.stateChanged.connect(lambda state: self.toggle_alert_max(2, state))
+        self.alertMin_2.stateChanged.connect(lambda state: self.toggle_alert_min(2, state))
+
+        self.stopRegBtn_3.clicked.connect(lambda: self.onStopRegBtnClicked(3))
+        self.alertMax_3.stateChanged.connect(lambda state: self.toggle_alert_max(3, state))
+        self.alertMin_3.stateChanged.connect(lambda state: self.toggle_alert_min(3, state))
+
+        self.stopRegBtn_4.clicked.connect(lambda: self.onStopRegBtnClicked(4))
+        self.alertMax_4.stateChanged.connect(lambda state: self.toggle_alert_max(4, state))
+        self.alertMin_4.stateChanged.connect(lambda state: self.toggle_alert_min(4, state))
+
+        # Collego i segnali della UI ai metodi del grafico
+        self.checkMin_1.toggled.connect(self.plots[0].toggle_min_visibility)
+        self.checkMax_1.toggled.connect(self.plots[0].toggle_max_visibility)
+        self.spinMin_1.valueChanged.connect(self.plots[0].set_min_value)
+        self.spinMax_1.valueChanged.connect(self.plots[0].set_max_value)
+
+        self.checkMin_2.toggled.connect(self.plots[1].toggle_min_visibility)
+        self.checkMax_2.toggled.connect(self.plots[1].toggle_max_visibility)
+        self.spinMin_2.valueChanged.connect(self.plots[1].set_min_value)
+        self.spinMax_2.valueChanged.connect(self.plots[1].set_max_value)
+
+        self.checkMin_3.toggled.connect(self.plots[2].toggle_min_visibility)
+        self.checkMax_3.toggled.connect(self.plots[2].toggle_max_visibility)
+        self.spinMin_3.valueChanged.connect(self.plots[2].set_min_value)
+        self.spinMax_3.valueChanged.connect(self.plots[2].set_max_value)
+
+        self.checkMin_4.toggled.connect(self.plots[3].toggle_min_visibility)
+        self.checkMax_4.toggled.connect(self.plots[3].toggle_max_visibility)
+        self.spinMin_4.valueChanged.connect(self.plots[3].set_min_value)
+        self.spinMax_4.valueChanged.connect(self.plots[3].set_max_value)
+
+        # Collego i segnali del grafico alla UI
+        self.plots[0].update_min_value.connect(self.spinMin_1.setValue)
+        self.plots[0].update_max_value.connect(self.spinMax_1.setValue)
+
+        self.plots[1].update_min_value.connect(self.spinMin_2.setValue)
+        self.plots[1].update_max_value.connect(self.spinMax_2.setValue)
+
+        self.plots[2].update_min_value.connect(self.spinMin_3.setValue)
+        self.plots[2].update_max_value.connect(self.spinMax_3.setValue)
+
+        self.plots[3].update_min_value.connect(self.spinMin_4.setValue)
+        self.plots[3].update_max_value.connect(self.spinMax_4.setValue)
 
         # Layout per i grafici in griglia
         self.layout = QGridLayout()
@@ -89,6 +200,73 @@ class MainController(QObject):
 
         self.alert_box = None  # Variabile per l'alert attuale
         self.alert_signal.connect(self.show_alert)
+
+        # Variabile per tracciare l'ultimo alert per ogni grafico
+        self.alert_box[0] = None
+        self.alert_box[1] = None
+        self.alert_box[2] = None
+        self.alert_box[3] = None
+
+        # Imposto le soglie iniziali
+        self.alertMaxActive_1 = False
+        self.alertMaxActive_1 = False
+        self.lastAlertTime_1 = None
+
+        self.alertMaxActive_2 = False
+        self.alertMaxActive_2 = False
+        self.lastAlertTime_2 = None
+
+        self.alertMaxActive_3 = False
+        self.alertMaxActive_3 = False
+        self.lastAlertTime_3 = None
+
+        self.alertMaxActive_4 = False
+        self.alertMaxActive_4 = False
+        self.lastAlertTime_4 = None
+
+        # Collego gli alert ai segnali (solo per MacOS)
+        self.alert_signal_1.connect(lambda: self.show_alert(1))
+        self.alert_signal_2.connect(lambda: self.show_alert(2))
+        self.alert_signal_3.connect(lambda: self.show_alert(3))
+        self.alert_signal_4.connect(lambda: self.show_alert(4))
+
+    def toggle_alert_max(self, graph_number, state):
+        """
+        Attiva o disattiva gli alert per il superamento del massimo
+        """
+        if graph_number == 1:
+            self.alertMaxActive_1 = (state == 2)
+
+        elif graph_number == 2:
+            self.alertMaxActive_2 = (state == 2)
+
+        elif graph_number == 3:
+            self.alertMaxActive_3 = (state == 2)
+
+        elif graph_number == 4:
+            self.alertMaxAcrive_4 = (state == 2)
+
+        else:
+            raise ValueError("Errore, valore non trovato")
+
+    def toggle_alert_min(self, graph_number, state):
+        """
+        Attiva o disattiva gli alert per il superamento del minimo
+        """
+        if graph_number == 1:
+            self.alertMinActive_1 = (state == 2)
+
+        elif graph_number == 2:
+            self.alertMinActive_2 = (state == 2)
+
+        elif graph_number == 3:
+            self.alertMinActive_3 = (state == 2)
+
+        elif graph_number == 4:
+            self.alertMinAcrive_4 = (state == 2)
+
+        else:
+            raise ValueError("Errore, valore non trovato")
 
     def listen_udp(self, variable_name, port):
         """
@@ -150,7 +328,7 @@ class MainController(QObject):
 
             if checked:
                 if len(self.selected_variables) >= self.MAX_GRAPHS:
-                    self.show_alert("⚠️ Massimo 4 variabili selezionabili! Deseleziona una variabile per aggiungerne un'altra.")
+                    self.show_alertMaxVarLen("⚠️ Massimo 4 variabili selezionabili! Deseleziona una variabile per aggiungerne un'altra.")
                     item.setCheckState(Qt.Unchecked)
                     return
 
@@ -218,19 +396,59 @@ class MainController(QObject):
 
     def on_data_received(self, variable_name, value):
         """
-        Gestisce il dato ricevuto e aggiorna il modello e il grafico corrispondente.
+        Gestisce il dato ricevuto, aggiorna il modello e il grafico corrispondente,
+        e mostra un alert se il valore supera le soglie impostate.
         """
         print(f"📡 Segnale ricevuto per {variable_name}: {value}")  # DEBUG
 
+        # Controlla se la variabile è nei grafici
         if variable_name in self.plots:
             x_value = len(self.model.get_data(variable_name)[0])  # Conta quanti punti ha già
             self.model.add_data(variable_name, x_value, value)  # Aggiunge il dato al modello
             print(f"📊 Aggiornamento grafico per {variable_name}")  # DEBUG
             self.plots[variable_name].update_plot(variable_name)  # Aggiorna solo il grafico corretto
+
+            # Controlla quale grafico è associato alla variabile
+            graph_index = list(self.plots.keys()).index(variable_name) + 1  # Grafico 1, 2, 3, 4
+
+            # Recupera la soglia minima e massima per il grafico corrispondente
+            min_threshold = getattr(self, f"spinMin_{graph_index}").value()
+            max_threshold = getattr(self, f"spinMax_{graph_index}").value()
+
+            # Controlla se gli alert sono attivi per quel grafico
+            alert_min_active = getattr(self, f"alertMinActive_{graph_index}")
+            alert_max_active = getattr(self, f"alertMaxActive_{graph_index}")
+
+            # Controlla se il valore supera la soglia e se gli alert sono attivi
+            if alert_max_active and value > max_threshold:
+                self.show_alert(f"⚠️ Valore sopra soglia per {variable_name}: {value:.2f} > {max_threshold:.2f}")
+
+            if alert_min_active and value < min_threshold:
+                self.show_alert(f"⚠️ Valore sotto soglia per {variable_name}: {value:.2f} < {min_threshold:.2f}")
+
         else:
             print(f"⚠️ Variabile {variable_name} ricevuta ma non trovata nei grafici.")
 
-    def show_alert(self, message):
+
+    def onStopRegBtnClicked(self, graph_number):
+        """
+        Ferma il flusso UDP per il grafico corrispondente
+        """
+        variable_name = None
+
+        for var, plot in self.plots.item():
+            if plot == self.plots.get(graph_number):
+                variable_name = var
+                break
+
+        if variable_name:
+            print(f"Fermata registrazione per {variable_name}")
+            self.tcp_sock.sendall(f"STOP: {variable_name}".encode())
+
+        else:
+            print(f"Nessun variabile associata a Graph {graph_number}")
+
+    def show_alertMaxVarLen(self, message):
         """
         Mostra un avviso se si superano le 4 variabili selezionate.
         """
@@ -247,6 +465,30 @@ class MainController(QObject):
             self.alert_box.show()
             self.alert_box.raise_()
             self.alert_box.activateWindow()
+
+    def show_alert(self, message):
+        """
+        Mostra un messaggio di alert con una finestra di dialogo
+        """
+        if self.alert_box and self.alert_box.isVisible():
+            self.alert_box.setText(message)
+
+        else:
+            self.alert_box = QMessageBox()
+            self.alert_box.setIcon(QMessageBox.Warning)
+            self.alert_box.setWindowTitle("Alert valore fuori soglia")
+            self.alert_box.setText(message)
+
+            self.alert_box.setWindowModality(Qt.NonModal)  # Permette interazione con la UI sottostante
+            self.alert_box.setAttribute(Qt.WA_DeleteOnClose)  # Chiude e libera la memoria quando
+
+            # Connetto il segnale di chiusura alla funzione che resetta self.alert_box
+            self.alert_box.finished.connect(self.reset_alert_box)
+
+            self.alert_box.show()  # Usa show() per NON bloccare la UI
+            self.alert_box.raise_()  # Porta la finestra in primo piano
+            self.alert_box.activateWindow()  # Assicura che riceva il
+
 
     def reset_alert_box(self):
         """

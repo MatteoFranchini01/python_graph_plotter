@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1263</width>
+    <height>828</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,106 +20,394 @@
       <x>0</x>
       <y>0</y>
       <width>201</width>
-      <height>551</height>
+      <height>771</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QWidget" name="widget" native="true">
-       <widget class="QCheckBox" name="maxLineCheckBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>10</y>
-          <width>85</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Max line</string>
-        </property>
-       </widget>
-       <widget class="QCheckBox" name="minLineCheckBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>40</y>
-          <width>85</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Min line</string>
-        </property>
-       </widget>
-       <widget class="QDoubleSpinBox" name="maxSpinBox">
-        <property name="geometry">
-         <rect>
-          <x>110</x>
-          <y>10</y>
-          <width>62</width>
-          <height>22</height>
-         </rect>
-        </property>
-       </widget>
-       <widget class="QDoubleSpinBox" name="minSpinBox">
-        <property name="geometry">
-         <rect>
-          <x>110</x>
-          <y>40</y>
-          <width>62</width>
-          <height>22</height>
-         </rect>
-        </property>
-       </widget>
        <widget class="QListView" name="listView">
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>170</y>
+          <y>320</y>
           <width>201</width>
-          <height>381</height>
+          <height>451</height>
          </rect>
         </property>
        </widget>
-       <widget class="QPushButton" name="stopRegButton">
+       <widget class="QTabWidget" name="tabWidget">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>70</y>
-          <width>100</width>
-          <height>32</height>
+          <x>0</x>
+          <y>0</y>
+          <width>201</width>
+          <height>321</height>
          </rect>
         </property>
-        <property name="text">
-         <string>Stop Reg</string>
+        <property name="currentIndex">
+         <number>1</number>
         </property>
-       </widget>
-       <widget class="QCheckBox" name="alertMaxCheckBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>110</y>
-          <width>85</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Alert Max</string>
-        </property>
-       </widget>
-       <widget class="QCheckBox" name="alertMinCheckBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>140</y>
-          <width>85</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Alert Min</string>
-        </property>
+        <widget class="QWidget" name="graph_1">
+         <attribute name="title">
+          <string>G 1</string>
+         </attribute>
+         <widget class="QPushButton" name="stopRegButton">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>100</y>
+            <width>100</width>
+            <height>32</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Stop Reg</string>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="minSpinBox">
+          <property name="geometry">
+           <rect>
+            <x>120</x>
+            <y>70</y>
+            <width>62</width>
+            <height>22</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="minLineCheckBox">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>70</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Min line</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="alertMinCheckBox">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>170</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Alert Min</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="alertMaxCheckBox">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>140</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Alert Max</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="maxLineCheckBox">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>40</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Max line</string>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="maxSpinBox">
+          <property name="geometry">
+           <rect>
+            <x>120</x>
+            <y>40</y>
+            <width>62</width>
+            <height>22</height>
+           </rect>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="graph_2">
+         <attribute name="title">
+          <string>G 2</string>
+         </attribute>
+         <widget class="QCheckBox" name="alertMaxCheckBox_2">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>140</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Alert Max</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="minLineCheckBox_2">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>70</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Min line</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="alertMinCheckBox_2">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>170</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Alert Min</string>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="stopRegButton_2">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>100</y>
+            <width>100</width>
+            <height>32</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Stop Reg</string>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="maxSpinBox_2">
+          <property name="geometry">
+           <rect>
+            <x>120</x>
+            <y>40</y>
+            <width>62</width>
+            <height>22</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="minSpinBox_2">
+          <property name="geometry">
+           <rect>
+            <x>120</x>
+            <y>70</y>
+            <width>62</width>
+            <height>22</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="maxLineCheckBox_2">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>40</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Max line</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="graph_3">
+         <attribute name="title">
+          <string>G 3</string>
+         </attribute>
+         <widget class="QCheckBox" name="alertMaxCheckBox_3">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>140</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Alert Max</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="minLineCheckBox_3">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>70</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Min line</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="alertMinCheckBox_3">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>170</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Alert Min</string>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="stopRegButton_3">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>100</y>
+            <width>100</width>
+            <height>32</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Stop Reg</string>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="maxSpinBox_3">
+          <property name="geometry">
+           <rect>
+            <x>120</x>
+            <y>40</y>
+            <width>62</width>
+            <height>22</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="minSpinBox_3">
+          <property name="geometry">
+           <rect>
+            <x>120</x>
+            <y>70</y>
+            <width>62</width>
+            <height>22</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="maxLineCheckBox_3">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>40</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Max line</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="graph_4">
+         <attribute name="title">
+          <string>G 4</string>
+         </attribute>
+         <widget class="QCheckBox" name="alertMaxCheckBox_4">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>140</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Alert Max</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="minLineCheckBox_4">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>70</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Min line</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="alertMinCheckBox_4">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>170</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Alert Min</string>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="stopRegButton_4">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>100</y>
+            <width>100</width>
+            <height>32</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Stop Reg</string>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="maxSpinBox_4">
+          <property name="geometry">
+           <rect>
+            <x>120</x>
+            <y>40</y>
+            <width>62</width>
+            <height>22</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="minSpinBox_4">
+          <property name="geometry">
+           <rect>
+            <x>120</x>
+            <y>70</y>
+            <width>62</width>
+            <height>22</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="maxLineCheckBox_4">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>40</y>
+            <width>85</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Max line</string>
+          </property>
+         </widget>
+        </widget>
        </widget>
       </widget>
      </item>
@@ -130,8 +418,8 @@
      <rect>
       <x>200</x>
       <y>0</y>
-      <width>601</width>
-      <height>551</height>
+      <width>951</width>
+      <height>701</height>
      </rect>
     </property>
    </widget>
@@ -141,7 +429,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1263</width>
      <height>24</height>
     </rect>
    </property>
